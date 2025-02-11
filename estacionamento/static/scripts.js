@@ -131,3 +131,25 @@ $(document).ready(function() {
 $('#vagas').select2({
     placeholder: 'Selecione a quantidade de vagas'
 });
+
+function carregarVagasDisponiveis() {
+    fetch('/listar_vagas_disponiveis/')
+    .then(response => response.json())
+    .then(data => {
+        let vagasContainer = document.getElementById('vagas-disponiveis');
+        vagasContainer.innerHTML = "";
+
+        if (data.vagas_disponiveis.length === 0) {
+            vagasContainer.innerHTML = "<p>Nenhuma vaga disponível no momento.</p>";
+        } else {
+            data.vagas_disponiveis.forEach(vaga => {
+                vagasContainer.innerHTML += `<p>Vaga ${vaga.numero}: ${vaga.status}</p>`;
+            });
+        }
+    })
+    .catch(error => console.error("Erro ao carregar vagas disponíveis:", error));
+}
+
+// Atualiza as vagas disponíveis a cada 5 segundos
+setInterval(carregarVagasDisponiveis, 5000);
+

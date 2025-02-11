@@ -74,14 +74,17 @@
                     </div>
 
                     <div class="mb-1">
-                        <label for="comodidades" class="form-label">Comodidades</label>
-                        <select id="comodidades" name="comodidades" class="form-control" multiple required>
-                            <option value="cameras">Câmeras de Segurança</option>
-                            <option value="wi_fi">Wi-Fi</option>
-                            <option value="vagas_handicap">Vagas para Deficientes</option>
-                            <option value="carregadores">Carregadores de Carro Elétrico</option>
-                        </select>
-                    </div>
+                            <label for="comodidades" class="form-label">Comodidades</label>
+                            <select id="comodidades" name="comodidades" class="form-control" multiple required>
+                                {% for comodidade in comodidades %}
+                <option value="{{ comodidade.nome }}">{{ comodidade.nome }}</option>
+            {% endfor %}
+                                <option value="cameras">Câmeras de Segurança</option>
+                                <option value="wi_fi">Wi-Fi</option>
+                                <option value="vagas_handicap">Vagas para Deficientes</option>
+                                <option value="carregadores">Carregadores de Carro Elétrico</option>
+                            </select>
+                        </div>
 
                     <div class="mb-1">
                         <label for="vagas_quantidade" class="form-label">Quantidade de Vagas</label>

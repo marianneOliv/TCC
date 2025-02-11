@@ -5,7 +5,7 @@ import requests
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from estacionamentos.models import Estacionamento
+from estacionamentos.models import Estacionamento , Vaga
 from .forms import ClienteForm
 from django.contrib.auth import get_user_model
 
@@ -72,19 +72,22 @@ def cadastroCliente(request):
 
     return render(request, 'clientes/cadastroCliente.html')
 
-@login_required
 def buscarEstacionamento(request):
     if not hasattr(request.user, 'cliente'):
         return redirect('home')  
 
+    endereco = None
+    estacionamentos = []
+
     if request.method == 'POST':
         cep = request.POST.get('cep')
-        
+
         if not cep or cep.strip() == "":
             return render(request, 'clientes/buscarEstacionamento.html', {
                 'erro': 'Por favor, insira um CEP válido.'
             })
 
+        # Chama a API ViaCEP para buscar o endereço
         response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
 
         if response.status_code == 200:
@@ -95,21 +98,18 @@ def buscarEstacionamento(request):
                     'erro': 'CEP não encontrado ou inválido.'
                 })
 
-            estacionamentos = Estacionamento.objects.filter(endereco__cep=cep)
+            # Busca estacionamentos pelo CEP
+            estacionamentos = Estacionamento.objects.filter(cep=cep)
 
-            if estacionamentos.exists():
-                return render(request, 'clientes/buscarEstacionamento.html', {
-                    'endereco': endereco,
-                    'estacionamentos': estacionamentos
-                })
-            else:
-                return render(request, 'clientes/buscarEstacionamento.html', {
-                    'endereco': endereco,
-                    'mensagem': 'Não há estacionamentos cadastrados neste endereço.'
-                })
-        else:
-            return render(request, 'clientes/buscarEstacionamento.html', {
-                'erro': 'CEP não encontrado ou inválido.'
-            })
+            for estacionamento in estacionamentos:
+                estacionamento.vagas_disponiveis = Vaga.objects.filter(
+                    estacionamento=estacionamento,
+                    status="disponível"
+                ).count()
 
-    return render(request, 'clientes/buscarEstacionamento.html')
+        return render(request, 'clientes/buscarEstacionamento.html', {
+            'endereco': endereco,
+            'estacionamentos': estacionamentos
+        })
+
+    return render(request, 'clientes/buscarEstacionamento.html')    

@@ -9,7 +9,12 @@ from .forms import EstacionamentoForm
 from .forms import CompletarCadastroEstacionamentoForm
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from .models import Estacionamento, UsuarioEstacionamento
+from .models import Estacionamento, UsuarioEstacionamento, Vaga , Comodidade , Endereco
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
 def home(request):
@@ -84,21 +89,56 @@ def completarCadastro(request, estacionamento_id):
     if request.method == 'POST':
         data_hora_abertura = request.POST.get('data_hora_abertura')
         data_hora_fechamento = request.POST.get('data_hora_fechamento')
-        endereco_id = request.POST.get('endereco_id')
+       
+        cep = request.POST.get('cep')
+
+        comodidades = request.POST.getlist('comodidades')
+        quantidade_vagas = request.POST.get('quantidade_vagas')
 
         estacionamento.data_hora_abertura = data_hora_abertura
         estacionamento.data_hora_fechamento = data_hora_fechamento
-        estacionamento.endereco_id = endereco_id  
 
+        estacionamento.cep = cep 
+        estacionamento.vagas = quantidade_vagas
+
+
+        for comodidade_nome in comodidades:
+            comodidade = Comodidade(nome=comodidade_nome, estacionamento=estacionamento)
+            comodidade.save()
+
+        if quantidade_vagas:  
+            try:
+                estacionamento.vagas = int(quantidade_vagas)  
+            except ValueError:
+                
+                estacionamento.vagas = 3  
+        else:
+            estacionamento.vagas = 3  
         estacionamento.save()
+        print(f"CEP recebido: {cep}")
 
         messages.success(request, "Cadastro finalizado com sucesso!")
-        return redirect('gerenciarEstacionamento')  
+        return redirect('completarCadastro', estacionamento_id=estacionamento.id)
 
     return render(request, 'estacionamentos/completarCadastro.html', {'estacionamento': estacionamento})
 
 @login_required
-def gerenciarEstacionamento(request):
-    estacionamento = get_object_or_404(Estacionamento, user=request.user)
+def gerenciarEstacionamento(request, estacionamento_id):
+    estacionamento = get_object_or_404(Estacionamento, id=estacionamento_id)
     
     return render(request, 'estacionamentos/gerenciarEstacionamento.html', {'estacionamento': estacionamento})
+
+def atualizar_vaga(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)  
+            estacionamento_id = data.get("estacionamento_id")
+            sensor_status = data.get("sensor_status")  # 0 = Ocupado, 1 = Livre
+
+            print(f"Estacionamento {estacionamento_id}: Vaga {sensor_status}")
+
+            return JsonResponse({"status": "ok", "mensagem": "Vagas atualizadas com sucesso."})
+        except Exception as e:
+            return JsonResponse({"erro": str(e)}, status=400)
+    
+    return JsonResponse({"erro": "Método não permitido"}, status=405)
