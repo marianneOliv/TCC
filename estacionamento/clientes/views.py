@@ -8,7 +8,11 @@ from django.contrib.auth.hashers import make_password
 from estacionamentos.models import Estacionamento , Vaga
 from .forms import ClienteForm
 from django.contrib.auth import get_user_model
-
+from django.http import JsonResponse
+import requests
+import asyncio
+from asgiref.sync import sync_to_async
+from django.views.decorators.csrf import csrf_exempt
 
 def home(request):
     return render(request, 'home.html')
@@ -18,6 +22,7 @@ def loginCliente(request):
 
     if request.method == 'POST':
         print("Requisição POST recebida")  
+        print (request.POST)
         
         email = request.POST.get('email')
         senha = request.POST.get('senha')
@@ -68,26 +73,22 @@ def cadastroCliente(request):
         cliente.save()
 
         messages.success(request, "Cadastro realizado com sucesso!")
-        return redirect('loginCliente')  # Redirecionar para a página de login
-
+        return redirect('loginCliente')  
     return render(request, 'clientes/cadastroCliente.html')
 
 def buscarEstacionamento(request):
     if not hasattr(request.user, 'cliente'):
         return redirect('home')  
-
     endereco = None
     estacionamentos = []
 
     if request.method == 'POST':
         cep = request.POST.get('cep')
-
         if not cep or cep.strip() == "":
             return render(request, 'clientes/buscarEstacionamento.html', {
                 'erro': 'Por favor, insira um CEP válido.'
             })
 
-        # Chama a API ViaCEP para buscar o endereço
         response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
 
         if response.status_code == 200:
@@ -98,18 +99,33 @@ def buscarEstacionamento(request):
                     'erro': 'CEP não encontrado ou inválido.'
                 })
 
-            # Busca estacionamentos pelo CEP
             estacionamentos = Estacionamento.objects.filter(cep=cep)
-
-            for estacionamento in estacionamentos:
-                estacionamento.vagas_disponiveis = Vaga.objects.filter(
-                    estacionamento=estacionamento,
-                    status="disponível"
-                ).count()
-
         return render(request, 'clientes/buscarEstacionamento.html', {
             'endereco': endereco,
             'estacionamentos': estacionamentos
         })
 
     return render(request, 'clientes/buscarEstacionamento.html')    
+
+def atualizar_vagas(request):
+    print("chegou no atualizar vaga")
+    if not hasattr(request.user, 'cliente'):
+        return redirect('home')
+    
+    estacionamento_id = 11  #  fixo para testes
+    estacionamento = Estacionamento.objects.get(id=estacionamento_id)
+   # sensor_url = "http://10.13.37.2/status" 
+    sensor_url = "http://10.13.37.2/toggle/1"
+
+    response = requests.get(sensor_url)
+    if response.status_code == 200:
+        data = response.json()
+        estacionamento.vagas = data['vagas']
+        estacionamento.save()
+        
+        
+        return render(request, 'clientes/buscarEstacionamento.html', {
+            'estacionamentos': [estacionamento]
+        })
+    else:
+        return JsonResponse({'erro': 'Falha ao atualizar vagas a partir do sensor.'}, status=500)

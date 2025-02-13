@@ -17,6 +17,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 
+ESP32_URL = "http://localhost:8180/toggle/1"  # Ajuste para o IP do seu ESP32
+
+
 def home(request):
     return render(request, 'home.html')
 
@@ -128,17 +131,3 @@ def gerenciarEstacionamento(request, estacionamento_id):
     
     return render(request, 'estacionamentos/gerenciarEstacionamento.html', {'estacionamento': estacionamento})
 
-def atualizar_vaga(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)  
-            estacionamento_id = data.get("estacionamento_id")
-            sensor_status = data.get("sensor_status")  # 0 = Ocupado, 1 = Livre
-
-            print(f"Estacionamento {estacionamento_id}: Vaga {sensor_status}")
-
-            return JsonResponse({"status": "ok", "mensagem": "Vagas atualizadas com sucesso."})
-        except Exception as e:
-            return JsonResponse({"erro": str(e)}, status=400)
-    
-    return JsonResponse({"erro": "Método não permitido"}, status=405)

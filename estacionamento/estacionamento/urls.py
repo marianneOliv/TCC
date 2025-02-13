@@ -22,7 +22,5 @@ urlpatterns = [
     path('completarCadastro/<int:estacionamento_id>/', estacionamentos_views.completarCadastro, name='completarCadastro'),
 
     path('gerenciarEstacionamento/<int:estacionamento_id>' , estacionamentos_views.gerenciarEstacionamento, name='gerenciarEstacionamento' ),
-
-    path('atualizar_vaga/', estacionamentos_views.atualizar_vaga, name="atualizar_vaga"),
-
+    path('atualiza_vagas/<int:estacionamento_id>/', clientes_views.atualizar_vagas, name='atualizar_vagas'),
 ]
