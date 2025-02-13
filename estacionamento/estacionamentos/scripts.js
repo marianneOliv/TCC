@@ -133,14 +133,25 @@ $('#vagas').select2({
 });
 
 function atualizarVagas() {
-    fetch(`/atualizar_vagas/`)
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('estacionamentoModal').innerHTML = data;
-      });
-  }
+    fetch('/atualizar_vagas/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let vagasElement = document.getElementById('vagas-count-11');
+            if (vagasElement) {
+                vagasElement.textContent = data.vagas;  // Atualiza o HTML com o novo número de vagas
+            } else {
+                console.error("Elemento vagas-count-11 não encontrado no DOM.");
+            }
+        } else {
+            console.error("Erro ao atualizar vagas:", data.error);
+        }
+    })
+    .catch(error => console.error("Erro na requisição AJAX:", error));
+}
 
-  document.querySelectorAll('.estacionamento-card').forEach(card => {
-    card.addEventListener('click', () => atualizarVagas());
-  });
+function iniciarAtualizacaoVagas() {
+    setInterval(() => atualizarVagas(), 5000); // Atualiza a cada 5 segundos
+}
 
+document.addEventListener("DOMContentLoaded", iniciarAtualizacaoVagas);

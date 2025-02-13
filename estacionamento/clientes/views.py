@@ -77,6 +77,7 @@ def cadastroCliente(request):
     return render(request, 'clientes/cadastroCliente.html')
 
 def buscarEstacionamento(request):
+    print("chamou buscar estacionamento")
     if not hasattr(request.user, 'cliente'):
         return redirect('home')  
     endereco = None
@@ -90,6 +91,7 @@ def buscarEstacionamento(request):
             })
 
         response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
+        print("chamou api de enderecos")
 
         if response.status_code == 200:
             endereco = response.json()
@@ -107,25 +109,41 @@ def buscarEstacionamento(request):
 
     return render(request, 'clientes/buscarEstacionamento.html')    
 
-def atualizar_vagas(request):
-    print("chegou no atualizar vaga")
-    if not hasattr(request.user, 'cliente'):
-        return redirect('home')
-    
-    estacionamento_id = 11  #  fixo para testes
-    estacionamento = Estacionamento.objects.get(id=estacionamento_id)
-   # sensor_url = "http://10.13.37.2/status" 
-    sensor_url = "http://10.13.37.2/toggle/1"
+import logging
 
-    response = requests.get(sensor_url)
-    if response.status_code == 200:
-        data = response.json()
-        estacionamento.vagas = data['vagas']
+logger = logging.getLogger(__name__)
+
+
+def atualizar_vagas(request, estacionamento_id):  # Agora aceita o estacionamento_id
+    print(f"Chamou atualizar_vagas para estacionamento {estacionamento_id}")
+
+    try:
+        # Faz a requisição para o ESP32
+        print("Fazendo requisição para o ESP32...")
+        response = requests.get('http://localhost:8180/status')  # Verifique se o IP está correto
+        print(f"Resposta bruta do ESP32: {response.text}")
+
+        if response.status_code != 200:
+            return JsonResponse({'success': False, 'error': 'Falha na requisição ao ESP32'})
+
+        dados_esp32 = response.json()
+        print(f"Dados do ESP32: {dados_esp32}")
+
+        # Atualiza o estacionamento com a nova quantidade de vagas
+        estacionamento = Estacionamento.objects.get(id=estacionamento_id)
+        estacionamento.vagas = dados_esp32.get('vagas', estacionamento.vagas)  # Pegando "vagas" do JSON
         estacionamento.save()
-        
-        
-        return render(request, 'clientes/buscarEstacionamento.html', {
-            'estacionamentos': [estacionamento]
+
+        print(f"Estacionamento atualizado. Novas vagas: {estacionamento.vagas}")
+
+        return JsonResponse({
+            'success': True,
+            'vagas': estacionamento.vagas
         })
-    else:
-        return JsonResponse({'erro': 'Falha ao atualizar vagas a partir do sensor.'}, status=500)
+
+    except Exception as e:
+        print(f"Erro ao atualizar vagas: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

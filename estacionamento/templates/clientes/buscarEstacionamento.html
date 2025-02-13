@@ -66,9 +66,7 @@
                             <p>Cep: {{ estacionamento.cep }}</p>
                             <p>Horário de Abertura: {{ estacionamento.data_hora_abertura }}</p>
                             <p>Horário de Fechamento: {{ estacionamento.data_hora_fechamento }}</p>
-                            <p><strong>Vagas:</strong> {{ estacionamento.vagas }}</p>
-            <!--                <p><strong>Vagas disponíveis:</strong> <span class="vagas-disponiveis">{{ estacionamento.vagas }}</span></p>-->
-            
+                            <p><strong>Vagas:</strong> <span id="vagas-count-{{ estacionamento.id }}">{{ estacionamento.vagas }}</span></p>            
                             <p><strong>Comodidades:</strong> 
                                 {% for comodidade in estacionamento.comodidades.all %}
                                     {{ comodidade.nome }},
